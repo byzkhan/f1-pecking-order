@@ -130,8 +130,11 @@
 
             <div class="meetings-grid">
                 {% for meeting in meetings %}
-                <div class="meeting-card">
-                    <h3>{{ meeting.meeting_name }}</h3>
+                <a href="{{ url_for('race_detail', meeting_key=meeting.meeting_key) }}" class="meeting-card meeting-card-link">
+                    <div class="meeting-card-header">
+                        <h3>{{ meeting.meeting_name }}</h3>
+                        <span class="meeting-card-arrow">&rarr;</span>
+                    </div>
                     <p class="circuit-name">{{ meeting.circuit_name }}</p>
 
                     <div class="meeting-rankings">
@@ -150,7 +153,8 @@
                         </div>
                         {% endfor %}
                     </div>
-                </div>
+                    <div class="meeting-card-footer">View Details</div>
+                </a>
                 {% endfor %}
             </div>
         </section>

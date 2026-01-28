@@ -471,6 +471,79 @@ def bulk_insert_laps(laps_list, session_key):
 # DATA QUERY FUNCTIONS
 # =============================================================================
 
+# =============================================================================
+# MEETING AND SESSION QUERY FUNCTIONS
+# =============================================================================
+
+def get_meeting_by_key(meeting_key):
+    """
+    Get a single meeting (race weekend) by its key.
+
+    Args:
+        meeting_key: The meeting's unique identifier
+
+    Returns:
+        Dictionary with meeting details or None if not found
+    """
+    with get_db_connection() as conn:
+        cursor = conn.cursor()
+        cursor.execute("""
+            SELECT meeting_key, meeting_name, country_name, circuit_name, date_start, year
+            FROM meetings
+            WHERE meeting_key = ?
+        """, (meeting_key,))
+        row = cursor.fetchone()
+        if row:
+            return dict(row)
+        return None
+
+
+def get_sessions_for_meeting(meeting_key):
+    """
+    Get all sessions for a specific meeting.
+
+    Args:
+        meeting_key: The meeting's unique identifier
+
+    Returns:
+        List of session dictionaries, ordered by date
+    """
+    with get_db_connection() as conn:
+        cursor = conn.cursor()
+        cursor.execute("""
+            SELECT session_key, meeting_key, session_name, session_type, date_start, date_end
+            FROM sessions
+            WHERE meeting_key = ?
+            ORDER BY date_start ASC
+        """, (meeting_key,))
+        rows = cursor.fetchall()
+        return [dict(row) for row in rows]
+
+
+def get_session_by_meeting_and_type(meeting_key, session_name):
+    """
+    Get a specific session by meeting key and session name.
+
+    Args:
+        meeting_key: The meeting's unique identifier
+        session_name: The session name (e.g., "Practice 1", "Qualifying", "Race")
+
+    Returns:
+        Dictionary with session details or None if not found
+    """
+    with get_db_connection() as conn:
+        cursor = conn.cursor()
+        cursor.execute("""
+            SELECT session_key, meeting_key, session_name, session_type, date_start, date_end
+            FROM sessions
+            WHERE meeting_key = ? AND session_name = ?
+        """, (meeting_key, session_name))
+        row = cursor.fetchone()
+        if row:
+            return dict(row)
+        return None
+
+
 def get_statistics():
     """
     Returns a summary of what data we have in the database.

@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ session.session_name }} - {{ meeting.meeting_name }} - F1 Pecking Order</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <!-- Header Section -->
+    <header class="hero hero-small">
+        <div class="container">
+            <!-- Breadcrumb Navigation -->
+            <nav class="breadcrumb">
+                <a href="{{ url_for('home') }}">Home</a>
+                <span class="breadcrumb-separator">&gt;</span>
+                <a href="{{ url_for('race_detail', meeting_key=meeting.meeting_key) }}">{{ meeting.meeting_name }}</a>
+                <span class="breadcrumb-separator">&gt;</span>
+                <span class="breadcrumb-current">{{ session.session_name }}</span>
+            </nav>
+
+            <h1>{{ session.session_name }}</h1>
+            <p class="subtitle">{{ meeting.meeting_name }} - {{ meeting.circuit_name }}</p>
+
+            <!-- Session Stats Bar -->
+            <div class="stats-bar">
+                <span class="stat">
+                    <strong>{{ stats.driver_count }}</strong> Drivers
+                </span>
+                <span class="stat">
+                    <strong>{{ stats.lap_count }}</strong> Laps Analyzed
+                </span>
+            </div>
+        </div>
+    </header>
+
+    <main class="container">
+        <!-- Session Tab Bar -->
+        {% if sessions %}
+        <nav class="session-tabs">
+            {% for s in sessions %}
+            {% if s.slug %}
+            <a href="{{ url_for('session_detail', meeting_key=meeting.meeting_key, session_slug=s.slug) }}"
+               class="session-tab {% if s.slug == current_slug %}active{% endif %}">
+                {{ s.session_name }}
+            </a>
+            {% endif %}
+            {% endfor %}
+        </nav>
+        {% endif %}
+
+        <!-- Main Pecking Order Table -->
+        <section class="rankings-section">
+            <h2>Session Pecking Order</h2>
+            <p class="section-description">
+                Rankings based on normalized best lap times
+            </p>
+
+            <div class="rankings-table-container">
+                <table class="rankings-table session-table">
+                    <thead>
+                        <tr>
+                            <th class="pos-col">Pos</th>
+                            <th class="driver-col">Driver</th>
+                            <th class="team-col">Team</th>
+                            <th class="pace-col">Best Lap</th>
+                            <th class="gap-col">Gap</th>
+                            <th class="sector-col">S1</th>
+                            <th class="sector-col">S2</th>
+                            <th class="sector-col">S3</th>
+                            <th class="tire-col">Tire</th>
+                            <th class="laps-col">Laps</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for driver in driver_rankings %}
+                        <tr>
+                            <td class="pos-col">
+                                <span class="position {% if driver.position <= 3 %}top-three{% endif %}">
+                                    {{ driver.position }}
+                                </span>
+                            </td>
+                            <td class="driver-col">
+                                <span class="driver-name">{{ driver.driver_name }}</span>
+                                <span class="driver-acronym">({{ driver.name_acronym }})</span>
+                            </td>
+                            <td class="team-col">
+                                <span class="team-color-bar" style="background-color: #{{ driver.team_color | replace('#', '') }};"></span>
+                                <span class="team-name-small">{{ driver.team_name }}</span>
+                            </td>
+                            <td class="pace-col">{{ driver.best_lap | format_pace }}</td>
+                            <td class="gap-col {% if driver.gap_to_leader == 0 %}leader{% endif %}">
+                                {{ driver.gap_to_leader | format_gap }}
+                            </td>
+                            <td class="sector-col">{{ driver.sector_1 | format_sector }}</td>
+                            <td class="sector-col">{{ driver.sector_2 | format_sector }}</td>
+                            <td class="sector-col">{{ driver.sector_3 | format_sector }}</td>
+                            <td class="tire-col">
+                                {% if driver.compound %}
+                                <span class="tire-badge tire-{{ driver.compound | lower }}">{{ driver.compound[0] }}</span>
+                                {% else %}
+                                -
+                                {% endif %}
+                            </td>
+                            <td class="laps-col">{{ driver.lap_count }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <!-- Tire Usage Summary -->
+        {% if tire_summary %}
+        <section class="rankings-section tire-summary-section">
+            <h2>Tire Usage</h2>
+            <div class="tire-usage-grid">
+                {% for tire in tire_summary %}
+                <div class="tire-usage-card">
+                    <span class="tire-badge tire-{{ tire.compound | lower }} large">{{ tire.compound }}</span>
+                    <span class="tire-count">{{ tire.driver_count }} drivers</span>
+                </div>
+                {% endfor %}
+            </div>
+        </section>
+        {% endif %}
+
+        <!-- Navigation Links -->
+        <section class="session-navigation">
+            <a href="{{ url_for('race_detail', meeting_key=meeting.meeting_key) }}" class="nav-link">
+                &larr; Weekend Overview
+            </a>
+            <a href="{{ url_for('home') }}" class="nav-link">
+                Home
+            </a>
+        </section>
+    </main>
+
+    <!-- Footer -->
+    <footer>
+        <div class="container">
+            <p>F1 Pecking Order - Data from <a href="https://openf1.org" target="_blank">OpenF1 API</a></p>
+            <p class="disclaimer">
+                This is an independent analysis tool. Not affiliated with Formula 1 or FIA.
+            </p>
+        </div>
+    </footer>
+</body>
+</html>

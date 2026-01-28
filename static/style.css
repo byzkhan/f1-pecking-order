@@ -287,6 +287,310 @@ a:hover {
 
 
 /* =============================================================================
+   BREADCRUMB NAVIGATION
+   ============================================================================= */
+
+.breadcrumb {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-sm);
+    margin-bottom: var(--spacing-md);
+    font-size: 0.9rem;
+}
+
+.breadcrumb a {
+    color: var(--text-secondary);
+    transition: color 0.2s ease;
+}
+
+.breadcrumb a:hover {
+    color: var(--accent-red);
+}
+
+.breadcrumb-separator {
+    color: var(--text-muted);
+}
+
+.breadcrumb-current {
+    color: var(--text-primary);
+    font-weight: 500;
+}
+
+
+/* =============================================================================
+   SESSION TAB BAR
+   ============================================================================= */
+
+.session-tabs {
+    display: flex;
+    gap: var(--spacing-xs);
+    padding: var(--spacing-md) 0;
+    margin-bottom: var(--spacing-lg);
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+}
+
+.session-tabs::-webkit-scrollbar {
+    display: none;
+}
+
+.session-tab {
+    display: inline-flex;
+    align-items: center;
+    padding: var(--spacing-sm) var(--spacing-lg);
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+    font-weight: 500;
+    white-space: nowrap;
+    transition: all 0.2s ease;
+    min-height: 44px;
+}
+
+.session-tab:hover {
+    background: var(--bg-tertiary);
+    color: var(--text-primary);
+    border-color: var(--text-muted);
+}
+
+.session-tab.active {
+    background: var(--accent-red);
+    border-color: var(--accent-red);
+    color: white;
+}
+
+
+/* =============================================================================
+   TIRE COMPOUND BADGES
+   ============================================================================= */
+
+.tire-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+}
+
+.tire-badge.large {
+    width: auto;
+    height: auto;
+    padding: var(--spacing-xs) var(--spacing-md);
+    border-radius: var(--radius-sm);
+    font-size: 0.85rem;
+}
+
+.tire-soft {
+    background: #e10600;
+    color: white;
+}
+
+.tire-medium {
+    background: #ffd700;
+    color: #1a1a1a;
+}
+
+.tire-hard {
+    background: #f0f0f0;
+    color: #1a1a1a;
+}
+
+.tire-intermediate {
+    background: #43b02a;
+    color: white;
+}
+
+.tire-wet {
+    background: #0072c6;
+    color: white;
+}
+
+
+/* =============================================================================
+   SECTOR TIME COLUMNS
+   ============================================================================= */
+
+.sector-col {
+    width: 70px;
+    text-align: right;
+    font-family: monospace;
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+}
+
+.tire-col {
+    width: 50px;
+    text-align: center;
+}
+
+
+/* =============================================================================
+   SESSION TABLE (wider for sectors)
+   ============================================================================= */
+
+.session-table {
+    min-width: 900px;
+}
+
+
+/* =============================================================================
+   TIRE USAGE SUMMARY
+   ============================================================================= */
+
+.tire-summary-section {
+    margin-top: var(--spacing-xl);
+}
+
+.tire-usage-grid {
+    display: flex;
+    gap: var(--spacing-lg);
+    flex-wrap: wrap;
+}
+
+.tire-usage-card {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-md);
+    background: var(--bg-secondary);
+    padding: var(--spacing-md) var(--spacing-lg);
+    border-radius: var(--radius-md);
+    border: 1px solid var(--border-color);
+}
+
+.tire-count {
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+}
+
+
+/* =============================================================================
+   SESSION CARDS (for race detail page)
+   ============================================================================= */
+
+.session-cards-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: var(--spacing-lg);
+}
+
+.session-card {
+    display: block;
+    background: var(--bg-secondary);
+    border-radius: var(--radius-lg);
+    border: 1px solid var(--border-color);
+    padding: var(--spacing-lg);
+    transition: all 0.2s ease;
+    text-decoration: none;
+    color: inherit;
+}
+
+.session-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+    border-color: var(--accent-red);
+}
+
+.session-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: var(--spacing-sm);
+}
+
+.session-card-header h3 {
+    font-size: 1.1rem;
+    color: var(--text-primary);
+}
+
+.session-card-stats {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+}
+
+.session-card-top3 {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-xs);
+    margin: var(--spacing-md) 0;
+}
+
+.session-card-driver {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-sm);
+    font-size: 0.9rem;
+}
+
+.session-card-pos {
+    width: 20px;
+    color: var(--text-muted);
+}
+
+.session-card-acronym {
+    font-weight: 500;
+    width: 36px;
+}
+
+.session-card-team-color {
+    width: 3px;
+    height: 14px;
+    border-radius: 2px;
+}
+
+.session-card-gap {
+    margin-left: auto;
+    font-family: monospace;
+    color: var(--text-secondary);
+    font-size: 0.85rem;
+}
+
+.session-card-arrow {
+    margin-top: var(--spacing-md);
+    padding-top: var(--spacing-md);
+    border-top: 1px solid var(--border-color);
+    font-size: 0.85rem;
+    color: var(--accent-red);
+    text-align: right;
+}
+
+
+/* =============================================================================
+   SESSION NAVIGATION
+   ============================================================================= */
+
+.session-navigation {
+    display: flex;
+    justify-content: space-between;
+    padding: var(--spacing-xl) 0;
+    margin-top: var(--spacing-lg);
+    border-top: 1px solid var(--border-color);
+}
+
+.nav-link {
+    display: inline-block;
+    padding: var(--spacing-sm) var(--spacing-lg);
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    color: var(--text-secondary);
+    transition: all 0.2s ease;
+}
+
+.nav-link:hover {
+    background: var(--bg-tertiary);
+    border-color: var(--accent-red);
+    color: var(--text-primary);
+}
+
+
+/* =============================================================================
    MEETINGS GRID (Race Weekend Breakdown)
    ============================================================================= */
 
@@ -297,21 +601,60 @@ a:hover {
 }
 
 .meeting-card {
+    display: block;
     background: var(--bg-secondary);
     border-radius: var(--radius-lg);
     border: 1px solid var(--border-color);
     padding: var(--spacing-lg);
-    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+}
+
+.meeting-card-link {
+    text-decoration: none;
+    color: inherit;
+    cursor: pointer;
 }
 
 .meeting-card:hover {
     transform: translateY(-2px);
     box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+    border-color: var(--accent-red);
+}
+
+.meeting-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+}
+
+.meeting-card-header h3 {
+    font-size: 1.1rem;
+    margin-bottom: var(--spacing-xs);
+}
+
+.meeting-card-arrow {
+    color: var(--text-muted);
+    font-size: 1.2rem;
+    transition: transform 0.2s ease, color 0.2s ease;
+}
+
+.meeting-card:hover .meeting-card-arrow {
+    transform: translateX(4px);
+    color: var(--accent-red);
 }
 
 .meeting-card h3 {
     font-size: 1.1rem;
     margin-bottom: var(--spacing-xs);
+}
+
+.meeting-card-footer {
+    margin-top: var(--spacing-md);
+    padding-top: var(--spacing-md);
+    border-top: 1px solid var(--border-color);
+    font-size: 0.85rem;
+    color: var(--accent-red);
+    text-align: right;
 }
 
 .meeting-card .circuit-name {
@@ -546,5 +889,38 @@ footer .disclaimer {
 
     .rankings-section h2 {
         font-size: 1.4rem;
+    }
+
+    .breadcrumb {
+        font-size: 0.8rem;
+        flex-wrap: wrap;
+    }
+
+    .session-tabs {
+        padding: var(--spacing-sm) 0;
+        gap: var(--spacing-xs);
+    }
+
+    .session-tab {
+        padding: var(--spacing-sm) var(--spacing-md);
+        font-size: 0.8rem;
+        min-height: 40px;
+    }
+
+    .session-navigation {
+        flex-direction: column;
+        gap: var(--spacing-md);
+    }
+
+    .nav-link {
+        text-align: center;
+    }
+
+    .tire-usage-grid {
+        flex-direction: column;
+    }
+
+    .session-cards-grid {
+        grid-template-columns: 1fr;
     }
 }

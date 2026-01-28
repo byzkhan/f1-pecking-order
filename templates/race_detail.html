@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ meeting.meeting_name }} - F1 Pecking Order</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <!-- Header Section -->
+    <header class="hero hero-small">
+        <div class="container">
+            <!-- Breadcrumb Navigation -->
+            <nav class="breadcrumb">
+                <a href="{{ url_for('home') }}">Home</a>
+                <span class="breadcrumb-separator">&gt;</span>
+                <span class="breadcrumb-current">{{ meeting.meeting_name }}</span>
+            </nav>
+
+            <h1>{{ meeting.meeting_name }}</h1>
+            <p class="subtitle">{{ meeting.circuit_name }} - {{ meeting.country_name }}</p>
+        </div>
+    </header>
+
+    <main class="container">
+        <!-- Session Tab Bar -->
+        {% if sessions %}
+        <nav class="session-tabs">
+            {% for session in sessions %}
+            {% if session.slug %}
+            <a href="{{ url_for('session_detail', meeting_key=meeting.meeting_key, session_slug=session.slug) }}"
+               class="session-tab">
+                {{ session.session_name }}
+            </a>
+            {% endif %}
+            {% endfor %}
+        </nav>
+        {% endif %}
+
+        <!-- Overall Weekend Rankings -->
+        <section class="rankings-section">
+            <h2>Weekend Pecking Order</h2>
+            <p class="section-description">
+                Combined rankings across all sessions (weighted by session importance)
+            </p>
+
+            <div class="rankings-table-container">
+                <table class="rankings-table">
+                    <thead>
+                        <tr>
+                            <th class="pos-col">Pos</th>
+                            <th class="driver-col">Driver</th>
+                            <th class="team-col">Team</th>
+                            <th class="pace-col">Pace</th>
+                            <th class="gap-col">Gap</th>
+                            <th class="laps-col">Sessions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for driver in overall_rankings %}
+                        <tr>
+                            <td class="pos-col">
+                                <span class="position {% if driver.position <= 3 %}top-three{% endif %}">
+                                    {{ driver.position }}
+                                </span>
+                            </td>
+                            <td class="driver-col">
+                                <span class="driver-name">{{ driver.driver_name }}</span>
+                                <span class="driver-acronym">({{ driver.name_acronym }})</span>
+                            </td>
+                            <td class="team-col">
+                                <span class="team-color-bar" style="background-color: #{{ driver.team_color | replace('#', '') }};"></span>
+                                <span class="team-name-small">{{ driver.team_name }}</span>
+                            </td>
+                            <td class="pace-col">{{ driver.pace | format_pace }}</td>
+                            <td class="gap-col {% if driver.gap == 0 %}leader{% endif %}">
+                                {{ driver.gap | format_gap }}
+                            </td>
+                            <td class="laps-col">{{ driver.session_count }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <!-- Session Preview Cards -->
+        <section class="rankings-section">
+            <h2>Sessions</h2>
+            <p class="section-description">
+                Click a session to see detailed standings
+            </p>
+
+            <div class="session-cards-grid">
+                {% for summary in session_summaries %}
+                <a href="{{ url_for('session_detail', meeting_key=meeting.meeting_key, session_slug=summary.slug) }}"
+                   class="session-card">
+                    <div class="session-card-header">
+                        <h3>{{ summary.session_name }}</h3>
+                        <span class="session-card-stats">{{ summary.driver_count }} drivers &middot; {{ summary.lap_count }} laps</span>
+                    </div>
+                    <div class="session-card-top3">
+                        {% for driver in summary.top_3 %}
+                        <div class="session-card-driver">
+                            <span class="session-card-pos">{{ driver.position }}.</span>
+                            <span class="session-card-acronym">{{ driver.name_acronym }}</span>
+                            <span class="session-card-team-color" style="background-color: #{{ driver.team_color | replace('#', '') }};"></span>
+                            <span class="session-card-gap">
+                                {% if driver.gap_to_leader == 0 %}
+                                    {{ driver.best_lap | format_pace }}
+                                {% else %}
+                                    +{{ "%.3f" | format(driver.gap_to_leader) }}
+                                {% endif %}
+                            </span>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    <div class="session-card-arrow">View Details &rarr;</div>
+                </a>
+                {% endfor %}
+            </div>
+        </section>
+
+        <!-- Back to Home -->
+        <section class="methodology-link">
+            <a href="{{ url_for('home') }}">&larr; Back to Overall Rankings</a>
+        </section>
+    </main>
+
+    <!-- Footer -->
+    <footer>
+        <div class="container">
+            <p>F1 Pecking Order - Data from <a href="https://openf1.org" target="_blank">OpenF1 API</a></p>
+            <p class="disclaimer">
+                This is an independent analysis tool. Not affiliated with Formula 1 or FIA.
+            </p>
+        </div>
+    </footer>
+</body>
+</html>
