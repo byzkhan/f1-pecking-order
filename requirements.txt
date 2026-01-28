@@ -1,0 +1,15 @@
+# F1 Pecking Order - Required Python Packages
+# Install these by running: pip install -r requirements.txt
+
+# requests: Makes HTTP calls to the OpenF1 API to fetch data
+requests>=2.31.0
+
+# pandas: Helps organize and manipulate data in tables (like Excel)
+pandas>=2.0.0
+
+# For the future website (Phase 2):
+# flask: A simple web framework to build our website
+flask>=3.0.0
+
+# python-dotenv: Lets us store settings in a .env file (optional but good practice)
+python-dotenv>=1.0.0

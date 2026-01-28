@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Methodology - F1 Pecking Order</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <header class="hero hero-small">
+        <div class="container">
+            <h1>Methodology</h1>
+            <p class="subtitle">How we calculate TRUE pace</p>
+        </div>
+    </header>
+
+    <main class="container methodology-page">
+        <a href="{{ url_for('home') }}" class="back-link">&larr; Back to Rankings</a>
+
+        <section class="method-section">
+            <h2>The Problem with Raw Lap Times</h2>
+            <p>
+                Raw lap times in Formula 1 are misleading. A driver might set the fastest lap of a race,
+                but that doesn't mean they have the fastest car. Their lap time is affected by:
+            </p>
+            <ul>
+                <li><strong>Tire compound</strong> - Soft tires are about 1 second faster than hard tires</li>
+                <li><strong>Fuel load</strong> - A full tank makes the car about 3 seconds slower</li>
+                <li><strong>Tire age</strong> - Worn tires are slower than fresh tires</li>
+                <li><strong>Track conditions</strong> - The track "rubbers in" during a weekend</li>
+            </ul>
+            <p>
+                To find out who's REALLY fastest, we need to normalize these variables.
+            </p>
+        </section>
+
+        <section class="method-section">
+            <h2>Our Normalization Process</h2>
+
+            <h3>1. Tire Compound Adjustment</h3>
+            <div class="formula-box">
+                <p>We adjust lap times to a "Medium tire" baseline:</p>
+                <ul>
+                    <li><strong>Soft tires:</strong> Add 0.5 seconds (they're faster, so we penalize)</li>
+                    <li><strong>Medium tires:</strong> No adjustment (baseline)</li>
+                    <li><strong>Hard tires:</strong> Subtract 0.5 seconds (they're slower, so we reward)</li>
+                </ul>
+            </div>
+
+            <h3>2. Tire Degradation Adjustment</h3>
+            <div class="formula-box">
+                <p>Tires lose approximately 0.03 seconds per lap of age.</p>
+                <p><code>Adjustment = tire_age × 0.03 seconds</code></p>
+                <p>We subtract this from the lap time to normalize to "fresh tire" pace.</p>
+            </div>
+
+            <h3>3. Fuel Load Adjustment (Races)</h3>
+            <div class="formula-box">
+                <p>Each kg of fuel makes the car approximately 0.033 seconds slower.</p>
+                <p>F1 cars start with about 110kg and burn about 1.8kg per lap.</p>
+                <p>We normalize to a "50kg fuel" baseline (mid-race fuel load):</p>
+                <p><code>Current fuel = 110 - (lap_number × 1.8)</code></p>
+                <p><code>Adjustment = (current_fuel - 50) × 0.033</code></p>
+            </div>
+
+            <h3>4. Session Weighting</h3>
+            <div class="formula-box">
+                <p>Different sessions have different weights in the final ranking:</p>
+                <table class="simple-table">
+                    <tr><td>Qualifying</td><td>Weight: 1.0</td></tr>
+                    <tr><td>Race</td><td>Weight: 1.0</td></tr>
+                    <tr><td>Sprint Qualifying</td><td>Weight: 0.8</td></tr>
+                    <tr><td>Sprint</td><td>Weight: 0.8</td></tr>
+                    <tr><td>Practice 2</td><td>Weight: 0.7</td></tr>
+                    <tr><td>Practice 3</td><td>Weight: 0.6</td></tr>
+                    <tr><td>Practice 1</td><td>Weight: 0.5</td></tr>
+                </table>
+            </div>
+        </section>
+
+        <section class="method-section">
+            <h2>Invalid Lap Detection</h2>
+            <p>We automatically exclude laps that would skew the results:</p>
+            <ul>
+                <li><strong>Pit out laps</strong> - Always slow due to speed limits</li>
+                <li><strong>Outliers</strong> - Laps 50% slower than average (yellow flags, accidents)</li>
+                <li><strong>Incomplete laps</strong> - Laps with missing sector times</li>
+                <li><strong>Qualifying out laps</strong> - Slow laps used to prepare tires</li>
+            </ul>
+        </section>
+
+        <section class="method-section">
+            <h2>Final Pace Score Calculation</h2>
+            <ol>
+                <li>Normalize all valid lap times using the adjustments above</li>
+                <li>Group laps by session type</li>
+                <li>Take the best 10% of laps from each session</li>
+                <li>Apply session weights</li>
+                <li>Calculate the weighted average</li>
+            </ol>
+            <p>
+                This gives us a pace score that represents each driver's true potential
+                pace when conditions are equalized.
+            </p>
+        </section>
+
+        <section class="method-section">
+            <h2>Limitations</h2>
+            <p>This analysis has some limitations:</p>
+            <ul>
+                <li><strong>Traffic:</strong> We can't detect when a driver was stuck behind slower cars</li>
+                <li><strong>Car setup:</strong> Teams run different aero configurations we can't measure</li>
+                <li><strong>Engine modes:</strong> Power unit deployment strategies vary</li>
+                <li><strong>Weather:</strong> Temperature variations affect tire performance</li>
+                <li><strong>Track evolution:</strong> The track gets faster as more rubber is laid down</li>
+            </ul>
+            <p>
+                Despite these limitations, normalizing for tire compound, fuel, and tire age
+                gives us a much more accurate picture of true pace than raw lap times.
+            </p>
+        </section>
+
+        <section class="method-section">
+            <h2>Data Source</h2>
+            <p>
+                All data comes from the <a href="https://openf1.org" target="_blank">OpenF1 API</a>,
+                which provides free access to F1 timing data.
+            </p>
+        </section>
+    </main>
+
+    <footer>
+        <div class="container">
+            <p>F1 Pecking Order - Data from <a href="https://openf1.org" target="_blank">OpenF1 API</a></p>
+            <p class="disclaimer">
+                This is an independent analysis tool. Not affiliated with Formula 1 or FIA.
+            </p>
+        </div>
+    </footer>
+</body>
+</html>

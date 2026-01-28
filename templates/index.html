@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>F1 Pecking Order - True Pace Rankings</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <!-- Header Section -->
+    <header class="hero">
+        <div class="container">
+            <h1>F1 Pecking Order</h1>
+            <p class="subtitle">True pace rankings adjusted for tires, fuel, and conditions</p>
+            <div class="stats-bar">
+                <span class="stat">
+                    <strong>{{ stats.meetings }}</strong> Race Weekends
+                </span>
+                <span class="stat">
+                    <strong>{{ stats.sessions }}</strong> Sessions
+                </span>
+                <span class="stat">
+                    <strong>{{ stats.valid_laps | default(0) }}</strong> Laps Analyzed
+                </span>
+                <span class="stat">
+                    <strong>{{ stats.teams }}</strong> Teams
+                </span>
+            </div>
+        </div>
+    </header>
+
+    <main class="container">
+        <!-- Team Rankings Section -->
+        <section class="rankings-section">
+            <h2>Constructor Pecking Order</h2>
+            <p class="section-description">
+                Team rankings based on their fastest driver's normalized pace
+            </p>
+
+            <div class="rankings-table-container">
+                <table class="rankings-table">
+                    <thead>
+                        <tr>
+                            <th class="pos-col">Pos</th>
+                            <th class="team-col">Team</th>
+                            <th class="pace-col">Pace</th>
+                            <th class="gap-col">Gap</th>
+                            <th class="drivers-col">Drivers</th>
+                            <th class="laps-col">Laps</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for team in team_rankings %}
+                        <tr>
+                            <td class="pos-col">
+                                <span class="position {% if team.position <= 3 %}top-three{% endif %}">
+                                    {{ team.position }}
+                                </span>
+                            </td>
+                            <td class="team-col">
+                                <span class="team-color-bar" style="background-color: #{{ team.team_color | replace('#', '') }};"></span>
+                                <span class="team-name">{{ team.team_name }}</span>
+                            </td>
+                            <td class="pace-col">{{ team.pace_score | format_pace }}</td>
+                            <td class="gap-col {% if team.gap_to_leader == 0 %}leader{% endif %}">
+                                {{ team.gap_to_leader | format_gap }}
+                            </td>
+                            <td class="drivers-col">{{ team.drivers | join(', ') }}</td>
+                            <td class="laps-col">{{ team.total_laps }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <!-- Driver Rankings Section -->
+        <section class="rankings-section">
+            <h2>Driver Pecking Order</h2>
+            <p class="section-description">
+                Individual driver rankings based on normalized lap times
+            </p>
+
+            <div class="rankings-table-container">
+                <table class="rankings-table">
+                    <thead>
+                        <tr>
+                            <th class="pos-col">Pos</th>
+                            <th class="driver-col">Driver</th>
+                            <th class="team-col">Team</th>
+                            <th class="pace-col">Pace</th>
+                            <th class="gap-col">Gap</th>
+                            <th class="laps-col">Laps</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for driver in driver_rankings %}
+                        <tr>
+                            <td class="pos-col">
+                                <span class="position {% if driver.position <= 3 %}top-three{% endif %}">
+                                    {{ driver.position }}
+                                </span>
+                            </td>
+                            <td class="driver-col">
+                                <span class="driver-name">{{ driver.driver_name }}</span>
+                                <span class="driver-acronym">({{ driver.name_acronym }})</span>
+                            </td>
+                            <td class="team-col">
+                                <span class="team-color-bar" style="background-color: #{{ driver.team_color | replace('#', '') }};"></span>
+                                <span class="team-name-small">{{ driver.team_name }}</span>
+                            </td>
+                            <td class="pace-col">{{ driver.pace_score | format_pace }}</td>
+                            <td class="gap-col {% if driver.gap_to_leader == 0 %}leader{% endif %}">
+                                {{ driver.gap_to_leader | format_gap }}
+                            </td>
+                            <td class="laps-col">{{ driver.total_laps }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <!-- Race Weekend Breakdown -->
+        <section class="rankings-section">
+            <h2>Pace by Race Weekend</h2>
+            <p class="section-description">
+                How the pecking order changed at each race
+            </p>
+
+            <div class="meetings-grid">
+                {% for meeting in meetings %}
+                <div class="meeting-card">
+                    <h3>{{ meeting.meeting_name }}</h3>
+                    <p class="circuit-name">{{ meeting.circuit_name }}</p>
+
+                    <div class="meeting-rankings">
+                        {% for driver in meeting.driver_paces[:10] %}
+                        <div class="meeting-driver">
+                            <span class="meeting-pos">{{ driver.position }}.</span>
+                            <span class="meeting-driver-name">{{ driver.name_acronym }}</span>
+                            <span class="meeting-team-color" style="background-color: #{{ driver.team_color | replace('#', '') }};"></span>
+                            <span class="meeting-gap">
+                                {% if driver.gap == 0 %}
+                                    {{ driver.pace | format_pace }}
+                                {% else %}
+                                    +{{ "%.3f" | format(driver.gap) }}
+                                {% endif %}
+                            </span>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </section>
+
+        <!-- Methodology Link -->
+        <section class="methodology-link">
+            <a href="{{ url_for('methodology') }}">How are these rankings calculated?</a>
+        </section>
+    </main>
+
+    <!-- Footer -->
+    <footer>
+        <div class="container">
+            <p>F1 Pecking Order - Data from <a href="https://openf1.org" target="_blank">OpenF1 API</a></p>
+            <p class="disclaimer">
+                This is an independent analysis tool. Not affiliated with Formula 1 or FIA.
+            </p>
+        </div>
+    </footer>
+</body>
+</html>
