@@ -548,6 +548,294 @@ def get_meeting_breakdown() -> List[Dict]:
 
 
 # =============================================================================
+# SESSION-LEVEL PACE ANALYSIS
+# =============================================================================
+
+def get_session_pecking_order(session_key: int) -> Dict:
+    """
+    Calculate pecking order for a single session with detailed stats.
+
+    Returns a dictionary with:
+    - session info
+    - driver rankings with sectors, tires, lap counts
+    - tire usage summary
+
+    Args:
+        session_key: The session's unique identifier
+
+    Returns:
+        Dictionary with session details and driver rankings
+    """
+    with get_db_connection() as conn:
+        cursor = conn.cursor()
+
+        # Get session info
+        cursor.execute("""
+            SELECT s.session_key, s.session_name, s.session_type, s.date_start,
+                   m.meeting_key, m.meeting_name, m.circuit_name, m.country_name
+            FROM sessions s
+            JOIN meetings m ON s.meeting_key = m.meeting_key
+            WHERE s.session_key = ?
+        """, (session_key,))
+        session_row = cursor.fetchone()
+
+        if not session_row:
+            return None
+
+        session_info = dict(session_row)
+
+        # Get all valid laps for this session with driver info
+        cursor.execute("""
+            SELECT
+                l.driver_number,
+                l.lap_number,
+                l.lap_duration,
+                l.sector_1_duration,
+                l.sector_2_duration,
+                l.sector_3_duration,
+                l.speed_trap,
+                l.compound,
+                l.tire_age,
+                d.full_name as driver_name,
+                d.team_name,
+                d.team_color,
+                d.name_acronym
+            FROM laps l
+            JOIN drivers d ON l.driver_number = d.driver_number AND l.session_key = d.session_key
+            WHERE l.session_key = ? AND l.is_valid_for_ranking = 1 AND l.lap_duration IS NOT NULL
+            ORDER BY l.driver_number, l.lap_number
+        """, (session_key,))
+
+        laps = [dict(row) for row in cursor.fetchall()]
+
+    if not laps:
+        return {
+            'session': session_info,
+            'driver_rankings': [],
+            'tire_summary': [],
+            'stats': {'driver_count': 0, 'lap_count': 0}
+        }
+
+    # Get total laps for fuel calculation
+    total_laps = max(lap['lap_number'] for lap in laps)
+    session_type = session_info['session_type']
+
+    # Process laps by driver
+    driver_data = defaultdict(lambda: {
+        'laps': [],
+        'best_lap': None,
+        'best_sectors': [None, None, None],
+        'compounds_used': set(),
+        'speed_traps': [],
+    })
+
+    for lap in laps:
+        driver_name = lap['driver_name']
+
+        # Normalize the lap time
+        normalized = normalize_lap_time(
+            raw_lap_time=lap['lap_duration'],
+            compound=lap['compound'],
+            tire_age=lap['tire_age'],
+            session_type=session_type,
+            lap_number=lap['lap_number'],
+            total_laps=total_laps
+        )
+
+        lap['normalized_time'] = normalized
+        driver_data[driver_name]['laps'].append(lap)
+
+        # Track best lap
+        if normalized and (driver_data[driver_name]['best_lap'] is None or
+                          normalized < driver_data[driver_name]['best_lap']['normalized_time']):
+            driver_data[driver_name]['best_lap'] = lap
+
+        # Track best sectors
+        for i, sector_key in enumerate(['sector_1_duration', 'sector_2_duration', 'sector_3_duration']):
+            sector_time = lap[sector_key]
+            if sector_time:
+                current_best = driver_data[driver_name]['best_sectors'][i]
+                if current_best is None or sector_time < current_best:
+                    driver_data[driver_name]['best_sectors'][i] = sector_time
+
+        # Track compounds
+        if lap['compound']:
+            driver_data[driver_name]['compounds_used'].add(lap['compound'])
+
+        # Track speed traps
+        if lap['speed_trap']:
+            driver_data[driver_name]['speed_traps'].append(lap['speed_trap'])
+
+    # Build driver rankings
+    driver_rankings = []
+    for driver_name, data in driver_data.items():
+        if not data['best_lap']:
+            continue
+
+        best_lap = data['best_lap']
+
+        # Get driver info from best lap
+        driver_entry = {
+            'driver_name': driver_name,
+            'name_acronym': best_lap['name_acronym'],
+            'team_name': best_lap['team_name'],
+            'team_color': best_lap['team_color'] or '#888888',
+            'best_lap': best_lap['lap_duration'],
+            'normalized_time': best_lap['normalized_time'],
+            'sector_1': data['best_sectors'][0],
+            'sector_2': data['best_sectors'][1],
+            'sector_3': data['best_sectors'][2],
+            'compound': best_lap['compound'],
+            'lap_count': len(data['laps']),
+            'max_speed': max(data['speed_traps']) if data['speed_traps'] else None,
+            'compounds_used': list(data['compounds_used']),
+        }
+
+        driver_rankings.append(driver_entry)
+
+    # Sort by normalized time
+    driver_rankings.sort(key=lambda d: d['normalized_time'] if d['normalized_time'] else float('inf'))
+
+    # Add position and gap
+    if driver_rankings:
+        leader_time = driver_rankings[0]['normalized_time']
+        for i, driver in enumerate(driver_rankings):
+            driver['position'] = i + 1
+            driver['gap_to_leader'] = driver['normalized_time'] - leader_time if driver['normalized_time'] else None
+
+    # Calculate tire summary
+    tire_summary = defaultdict(lambda: {'count': 0, 'drivers': set()})
+    for driver_name, data in driver_data.items():
+        for compound in data['compounds_used']:
+            tire_summary[compound]['count'] += 1
+            tire_summary[compound]['drivers'].add(driver_name)
+
+    tire_summary_list = [
+        {'compound': compound, 'driver_count': info['count']}
+        for compound, info in tire_summary.items()
+    ]
+    tire_summary_list.sort(key=lambda x: x['compound'])
+
+    return {
+        'session': session_info,
+        'driver_rankings': driver_rankings,
+        'tire_summary': tire_summary_list,
+        'stats': {
+            'driver_count': len(driver_rankings),
+            'lap_count': len(laps),
+        }
+    }
+
+
+def get_meeting_pecking_order(meeting_key: int) -> Dict:
+    """
+    Calculate combined weekend pecking order and session summaries.
+
+    Args:
+        meeting_key: The meeting's unique identifier
+
+    Returns:
+        Dictionary with meeting info, overall rankings, and session summaries
+    """
+    with get_db_connection() as conn:
+        cursor = conn.cursor()
+
+        # Get meeting info
+        cursor.execute("""
+            SELECT meeting_key, meeting_name, country_name, circuit_name, date_start, year
+            FROM meetings
+            WHERE meeting_key = ?
+        """, (meeting_key,))
+        meeting_row = cursor.fetchone()
+
+        if not meeting_row:
+            return None
+
+        meeting_info = dict(meeting_row)
+
+        # Get all sessions for this meeting
+        cursor.execute("""
+            SELECT session_key, session_name, session_type, date_start
+            FROM sessions
+            WHERE meeting_key = ?
+            ORDER BY date_start ASC
+        """, (meeting_key,))
+        sessions = [dict(row) for row in cursor.fetchall()]
+
+    # Get session summaries with top 3
+    session_summaries = []
+    all_driver_times = defaultdict(list)
+    driver_info = {}
+
+    for session in sessions:
+        session_data = get_session_pecking_order(session['session_key'])
+        if session_data and session_data['driver_rankings']:
+            # Get top 3 for preview
+            top_3 = session_data['driver_rankings'][:3]
+
+            session_summaries.append({
+                'session_key': session['session_key'],
+                'session_name': session['session_name'],
+                'session_type': session['session_type'],
+                'top_3': top_3,
+                'driver_count': session_data['stats']['driver_count'],
+                'lap_count': session_data['stats']['lap_count'],
+            })
+
+            # Collect all driver times for overall ranking
+            for driver in session_data['driver_rankings']:
+                all_driver_times[driver['driver_name']].append({
+                    'normalized_time': driver['normalized_time'],
+                    'session_type': session['session_type'],
+                })
+                driver_info[driver['driver_name']] = {
+                    'name_acronym': driver['name_acronym'],
+                    'team_name': driver['team_name'],
+                    'team_color': driver['team_color'],
+                }
+
+    # Calculate overall weekend ranking
+    overall_rankings = []
+    for driver_name, times in all_driver_times.items():
+        # Weight times by session type
+        weighted_times = []
+        for t in times:
+            weight = SESSION_WEIGHTS.get(t['session_type'], 0.5)
+            weighted_times.append((t['normalized_time'], weight))
+
+        # Calculate weighted average
+        total_weight = sum(w for _, w in weighted_times)
+        weighted_avg = sum(t * w for t, w in weighted_times) / total_weight if total_weight > 0 else 0
+
+        info = driver_info[driver_name]
+        overall_rankings.append({
+            'driver_name': driver_name,
+            'name_acronym': info['name_acronym'],
+            'team_name': info['team_name'],
+            'team_color': info['team_color'],
+            'pace': weighted_avg,
+            'session_count': len(times),
+        })
+
+    # Sort by pace
+    overall_rankings.sort(key=lambda d: d['pace'])
+
+    # Add position and gap
+    if overall_rankings:
+        leader_pace = overall_rankings[0]['pace']
+        for i, driver in enumerate(overall_rankings):
+            driver['position'] = i + 1
+            driver['gap'] = driver['pace'] - leader_pace
+
+    return {
+        'meeting': meeting_info,
+        'overall_rankings': overall_rankings,
+        'session_summaries': session_summaries,
+        'sessions': sessions,
+    }
+
+
+# =============================================================================
 # DISPLAY FUNCTIONS (for command line)
 # =============================================================================
 
